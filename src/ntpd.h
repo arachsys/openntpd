@@ -76,7 +76,7 @@
 
 #define FILTER_ADJFREQ		0x01	/* set after doing adjfreq */
 #define AUTO_REPLIES		4	/* # of ntp replies we want for auto */
-#define AUTO_THRESHOLD		60	/* dont bother auto setting < this */
+#define AUTO_THRESHOLD		1	/* dont bother auto setting < this */
 #define INTERVAL_AUIO_DNSFAIL	1	/* DNS tmpfail interval for auto */
 #define TRIES_AUTO_DNSFAIL	4	/* DNS tmpfail quick retries */
 
