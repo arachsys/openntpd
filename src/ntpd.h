@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <poll.h>
 
+#include "compat.h"
 #include "queue.h"
 #include "imsg.h"
 #include "ntp.h"

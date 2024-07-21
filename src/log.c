@@ -23,6 +23,8 @@
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
+
+#include "compat.h"
 #include "log.h"
 
 static int	 dest;

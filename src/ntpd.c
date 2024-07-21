@@ -64,6 +64,8 @@ struct imsgbuf		*ibuf;
 int			 timeout = -1;
 
 extern u_int		 constraint_cnt;
+extern char		*__progname;
+extern char		**environ;
 
 void
 sighdlr(int sig)
@@ -99,8 +101,6 @@ writepid(struct ntpd_conf *lconf)
 __dead void
 usage(void)
 {
-	extern char *__progname;
-
 	if (strcmp(__progname, "ntpq") == 0)
 		fprintf(stderr,
 		    "usage: ntpq [ all | peers | sensors | status ]\n");
@@ -133,7 +133,6 @@ main(int argc, char *argv[])
 	const char		*conffile;
 	int			 ch, nfds, i, j;
 	int			 pipe_chld[2];
-	extern char		*__progname;
 	u_int			 pfd_elms = 0, new_cnt;
 	struct constraint	*cstr;
 	struct passwd		*pw;
@@ -142,6 +141,12 @@ main(int argc, char *argv[])
 	char			**argv0 = argv;
 	char			*pname = NULL;
 	time_t			 settime_deadline = 0;
+
+	if (__progname == NULL) {
+		__progname = strrchr(argv[0], '/');
+		__progname = __progname ? __progname + 1 : argv[0];
+	}
+	__progname = strdup(__progname);
 
 	if (strcmp(__progname, "ntpq") == 0) {
 		ctl_main(argc, argv);
@@ -153,6 +158,7 @@ main(int argc, char *argv[])
 	memset(&lconf, 0, sizeof(lconf));
 	lconf.settime = 1;
 
+	initproctitle(argv, environ);
 	while ((ch = getopt(argc, argv, "df:np:P:sSv")) != -1) {
 		switch (ch) {
 		case 'd':
@@ -498,6 +504,7 @@ ntpd_adjtime(double d)
 	else if (!firstadj && olddelta.tv_sec == 0 && olddelta.tv_usec == 0)
 		synced = 1;
 	firstadj = 0;
+	setsync(synced);
 	return (synced);
 }
 
