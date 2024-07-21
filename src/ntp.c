@@ -119,10 +119,11 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 	if (stat(pw->pw_dir, &stb) == -1) {
 		fatal("privsep dir %s could not be opened", pw->pw_dir);
 	}
-	if (stb.st_uid != 0 || (stb.st_mode & (S_IWGRP|S_IWOTH)) != 0) {
-		fatalx("bad privsep dir %s permissions: %o",
-		    pw->pw_dir, stb.st_mode);
-	}
+	if (stb.st_uid != 0)
+		fatal("privsep dir %s is not owned by root", pw->pw_dir);
+	if (stb.st_mode & (S_IWGRP|S_IWOTH))
+		fatal("privsep dir %s permits unprivileged write", pw->pw_dir);
+
 	if (chroot(pw->pw_dir) == -1)
 		fatal("chroot");
 	if (chdir("/") == -1)
@@ -349,7 +350,7 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 		now = getmonotime();
 		if (conf->constraint_median == 0 && clear_cdns &&
 		    now - last_cdns_reset > CONSTRAINT_SCAN_INTERVAL) {
-			log_debug("Reset constraint info");
+			log_debug("reset constraint info");
 			constraint_reset();
 			last_cdns_reset = now;
 			nextaction = now + CONSTRAINT_RETRY_INTERVAL;
@@ -569,7 +570,7 @@ ntp_dispatch_imsg_dns(void)
 				if (peer->id == imsg.hdr.peerid)
 					break;
 			if (peer == NULL) {
-				log_warnx("IMSG_HOST_DNS with invalid peerID");
+				log_warnx("IMSG_HOST_DNS with invalid peer id");
 				break;
 			}
 			if (peer->addr != NULL) {
@@ -596,7 +597,7 @@ ntp_dispatch_imsg_dns(void)
 
 			dlen = imsg.hdr.len - IMSG_HEADER_SIZE;
 			if (dlen == 0) {	/* no data -> temp error */
-				log_debug("DNS lookup tempfail");
+				log_debug("temporary DNS lookup failure");
 				peer->state = STATE_DNS_TEMPFAIL;
 				if (conf->tmpfail++ == TRIES_AUTO_DNSFAIL)
 					priv_settime(0, "of dns failures");
@@ -628,7 +629,7 @@ ntp_dispatch_imsg_dns(void)
 						free(h);
 						continue;
 					}
-					log_debug("Adding address %s to %s",
+					log_debug("adding address %s to %s",
 					    log_ntp_addr(h), peer->addr_head.name);
 					npeer = new_peer();
 					npeer->weight = peer->weight;
@@ -854,7 +855,7 @@ void
 priv_settime(double offset, char *msg)
 {
 	if (offset == 0)
-		log_info("cancel settime because %s", msg);
+		log_info("not setting time because %s", msg);
 	imsg_compose(ibuf_main, IMSG_SETTIME, 0, 0, -1,
 	    &offset, sizeof(offset));
 	conf->settime = 0;

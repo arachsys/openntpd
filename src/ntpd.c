@@ -325,8 +325,8 @@ main(int argc, char *argv[])
 			lconf.settime = 0;
 			timeout = -1;
 			log_init(logdest, lconf.verbose, LOG_DAEMON);
-			log_warnx("no reply received in time, skipping initial "
-			    "time setting");
+			log_warnx("not setting time because %s",
+			    "no replies received in time");
 			if (!lconf.debug)
 				if (daemon(1, 0))
 					fatal("daemon");
@@ -367,7 +367,7 @@ main(int argc, char *argv[])
 
 	msgbuf_clear(&ibuf->w);
 	free(ibuf);
-	log_info("Terminating");
+	log_info("terminating");
 	return (0);
 }
 

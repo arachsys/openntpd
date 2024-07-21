@@ -132,8 +132,7 @@ constraint_addr_init(struct constraint *cstr)
 		cstr->state = STATE_DNS_DONE;
 		break;
 	default:
-		/* XXX king bula sez it? */
-		fatalx("wrong AF in constraint_addr_init");
+		fatalx("unknown address family in constraint_addr_init");
 		/* NOTREACHED */
 	}
 
@@ -1117,11 +1116,11 @@ tls_readline(struct tls *tls, size_t *lenp, size_t *maxlength,
 
 	len = 128;
 	if ((buf = malloc(len)) == NULL)
-		fatal("Can't allocate memory for transfer buffer");
+		fatal("malloc");
 	for (i = 0; ; i++) {
 		if (i >= len - 1) {
 			if ((q = reallocarray(buf, len, 2)) == NULL)
-				fatal("Can't expand transfer buffer");
+				fatal("reallocarray");
 			buf = q;
 			len *= 2;
 		}

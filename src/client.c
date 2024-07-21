@@ -85,7 +85,7 @@ client_addr_init(struct ntp_peer *p)
 			p->state = STATE_DNS_DONE;
 			break;
 		default:
-			fatalx("king bula sez: wrong AF in client_addr_init");
+			fatalx("unknown address family");
 			/* NOTREACHED */
 		}
 	}

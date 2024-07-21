@@ -109,7 +109,7 @@ setup_listeners(struct servent *se, struct ntpd_conf *lconf, u_int *cnt)
 			la = nla;
 			continue;
 		default:
-			fatalx("king bula sez: af borked");
+			fatalx("unknown address family");
 		}
 
 		log_info("listening on %s %s",
