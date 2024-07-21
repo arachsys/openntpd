@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
-#include <sys/sysctl.h>
 #include <sys/wait.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -98,7 +97,7 @@ usage(void)
 		fprintf(stderr,
 		    "usage: ntpctl -s all | peers | Sensors | status\n");
 	else
-		fprintf(stderr, "usage: %s [-dnv] [-f file]\n",
+		fprintf(stderr, "usage: %s [-dnsSv] [-f file]\n",
 		    __progname);
 	exit(1);
 }
@@ -106,15 +105,11 @@ usage(void)
 int
 auto_preconditions(const struct ntpd_conf *cnf)
 {
-	int mib[2] = { CTL_KERN, KERN_SECURELVL };
-	int constraints, securelevel;
-	size_t sz = sizeof(int);
-
-	if (sysctl(mib, 2, &securelevel, &sz, NULL, 0) == -1)
-		err(1, "sysctl");
-	constraints = !TAILQ_EMPTY(&cnf->constraints);
-	return !cnf->settime && (constraints || cnf->trusted_peers ||
-	    conf->trusted_sensors) && securelevel == 0;
+	if (cnf->settime == 0)
+		return 0;
+	if (cnf->trusted_peers || cnf->trusted_sensors)
+		return 1;
+	return !TAILQ_EMPTY(&cnf->constraints);
 }
 
 #define POLL_MAX		8
@@ -139,7 +134,6 @@ main(int argc, char *argv[])
 	char			**argv0 = argv;
 	char			*pname = NULL;
 	time_t			 settime_deadline;
-	int			 sopt = 0;
 
 	if (strcmp(__progname, "ntpctl") == 0) {
 		ctl_main(argc, argv);
@@ -149,6 +143,7 @@ main(int argc, char *argv[])
 	conffile = CONFFILE;
 
 	memset(&lconf, 0, sizeof(lconf));
+	lconf.settime = 1;
 
 	while ((ch = getopt(argc, argv, "df:nP:sSv")) != -1) {
 		switch (ch) {
@@ -166,8 +161,10 @@ main(int argc, char *argv[])
 			pname = optarg;
 			break;
 		case 's':
+			lconf.settime = 2;
+			break;
 		case 'S':
-			sopt = ch;
+			lconf.settime = 0;
 			break;
 		case 'v':
 			lconf.verbose++;
@@ -184,12 +181,6 @@ main(int argc, char *argv[])
 		logdest |= LOG_TO_SYSLOG;
 
 	log_init(logdest, lconf.verbose, LOG_DAEMON);
-
-	if (sopt) {
-		log_warnx("-%c option no longer works and will be removed soon.",
-		    sopt);
-		log_warnx("Please reconfigure to use constraints or trusted servers.");
-	}
 
 	argc -= optind;
 	argv += optind;
@@ -211,8 +202,11 @@ main(int argc, char *argv[])
 		errx(1, "unknown user %s", NTPD_USER);
 
 	lconf.automatic = auto_preconditions(&lconf);
-	if (lconf.automatic)
-		lconf.settime = 1;
+
+	if (lconf.settime <= 1)
+		lconf.settime = lconf.automatic;
+	if (lconf.settime >= 2 && !lconf.automatic)
+		errx(1, "-s requires constraints or trusted servers");
 
 	if (pname != NULL) {
 		/* Remove our proc arguments, so child doesn't need to. */
@@ -322,14 +316,16 @@ main(int argc, char *argv[])
 
 		if (nfds == 0 && lconf.settime &&
 		    getmonotime() > settime_deadline + SETTIME_TIMEOUT) {
-			lconf.settime = 0;
-			timeout = -1;
 			log_init(logdest, lconf.verbose, LOG_DAEMON);
+			if (lconf.settime >= 2)
+				fatalx("no replies received in time: exiting");
 			log_warnx("not setting time because %s",
 			    "no replies received in time");
 			if (!lconf.debug)
 				if (daemon(1, 0))
 					fatal("daemon");
+			lconf.settime = 0;
+			timeout = -1;
 		}
 
 		if (nfds > 0 && (pfd[PFD_PIPE].revents & POLLOUT))

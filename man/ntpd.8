@@ -23,7 +23,7 @@
 .Sh SYNOPSIS
 .Nm ntpd
 .Bk -words
-.Op Fl dnv
+.Op Fl dnsSv
 .Op Fl f Ar file
 .Ek
 .Sh DESCRIPTION
@@ -59,6 +59,11 @@ instead of the default
 .It Fl n
 Configtest mode.
 Only check the configuration file for validity.
+.It Fl s
+Exit with an error if the time is not set in the foreground successfully.
+.It Fl S
+Do not attempt to set the time on startup.
+Just fork into the background to continue normal adjustments.
 .It Fl v
 This option allows
 .Nm
@@ -83,7 +88,9 @@ option, all calls to
 .Xr adjtime 2
 will be logged.
 .Pp
-At boot,
+Unless
+.Fl S
+is specified, at boot
 .Nm
 will stay for a maximum of 15 seconds in the foreground and make efforts to
 verify and correct the time if constraints are configured and
