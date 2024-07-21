@@ -364,7 +364,7 @@ struct {								\
  * XOR Simple queue functions.
  */
 #define	XSIMPLEQ_INIT(head) do {					\
-	arc4random_buf(&(head)->sqx_cookie, sizeof((head)->sqx_cookie)); \
+	getentropy(&(head)->sqx_cookie, sizeof((head)->sqx_cookie));	\
 	(head)->sqx_first = XSIMPLEQ_XOR(head, NULL);			\
 	(head)->sqx_last = XSIMPLEQ_XOR(head, &(head)->sqx_first);	\
 } while (0)

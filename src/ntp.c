@@ -889,19 +889,25 @@ update_scale(double offset)
 time_t
 scale_interval(time_t requested)
 {
-	time_t interval, r;
+	time_t interval;
+	uint64_t r;
 
 	interval = requested * conf->scale;
-	r = arc4random_uniform(SCALE_INTERVAL(interval));
-	return (interval + r);
+	if (getentropy(&r, sizeof(r)) == -1)
+		err(1, "getentropy");
+	/* Slight non-uniformity has no security impact here. */
+	return interval + r % SCALE_INTERVAL(interval);
 }
 
 time_t
 error_interval(void)
 {
-	time_t interval, r;
+	time_t interval;
+	uint64_t r;
 
 	interval = INTERVAL_QUERY_PATHETIC * QSCALE_OFF_MAX / QSCALE_OFF_MIN;
-	r = arc4random_uniform(interval / 10);
-	return (interval + r);
+	if (getentropy(&r, sizeof(r)) == -1)
+		err(1, "getentropy");
+	/* Slight non-uniformity has no security impact here. */
+	return interval + r % (interval / 10);
 }

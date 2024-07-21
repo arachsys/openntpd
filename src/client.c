@@ -24,6 +24,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <err.h>
 
 #include "ntpd.h"
 
@@ -204,8 +205,12 @@ client_query(struct ntp_peer *p)
 	 * Save the real transmit timestamp locally.
 	 */
 
-	p->query.msg.xmttime.int_partl = arc4random();
-	p->query.msg.xmttime.fractionl = arc4random();
+	if (getentropy(&p->query.msg.xmttime.int_partl,
+			sizeof(p->query.msg.xmttime.int_partl)) == -1)
+		err(1, "getentropy");
+	if (getentropy(&p->query.msg.xmttime.fractionl,
+			sizeof(p->query.msg.xmttime.fractionl)) == -1)
+		err(1, "getentropy");
 	p->query.xmttime = gettime();
 
 	if (ntp_sendmsg(p->query.fd, NULL, &p->query.msg) == -1) {
