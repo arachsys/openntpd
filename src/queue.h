@@ -35,7 +35,7 @@
 #ifndef	_SYS_QUEUE_H_
 #define	_SYS_QUEUE_H_
 
-#include <sys/_null.h>
+#include <stddef.h>
 
 /*
  * This file defines five types of data structures: singly-linked lists,

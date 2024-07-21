@@ -22,7 +22,9 @@
 #ifndef _IMSG_H_
 #define _IMSG_H_
 
-#include <sys/types.h>
+#include <stdint.h>
+
+#include "queue.h"
 
 #define IBUF_READ_SIZE		65535
 #define IMSG_HEADER_SIZE	sizeof(struct imsg_hdr)

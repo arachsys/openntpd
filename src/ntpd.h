@@ -20,17 +20,18 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/socket.h>
-#include <sys/queue.h>
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pwd.h>
+#include <grp.h>
 #include <stdarg.h>
 #include <poll.h>
-#include <imsg.h>
 
+#include "queue.h"
+#include "imsg.h"
 #include "ntp.h"
 #include "log.h"
 
