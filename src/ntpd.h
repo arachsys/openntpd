@@ -68,7 +68,7 @@
 #define	MAX_DISPLAY_WIDTH	80	/* max chars in ctl_show report line */
 
 #define FILTER_ADJFREQ		0x01	/* set after doing adjfreq */
-#define AUTO_REPLIES    	4	/* # of ntp replies we want for auto */
+#define AUTO_REPLIES		4	/* # of ntp replies we want for auto */
 #define AUTO_THRESHOLD		60	/* dont bother auto setting < this */
 #define INTERVAL_AUIO_DNSFAIL	1	/* DNS tmpfail interval for auto */
 #define TRIES_AUTO_DNSFAIL	4	/* DNS tmpfail quick retries */
@@ -237,8 +237,8 @@ struct ntpd_conf {
 	struct sockaddr_in				query_addr4;
 	struct sockaddr_in6				query_addr6;
 	u_int32_t					scale;
-	int				        	debug;
-	int				        	verbose;
+	int						debug;
+	int						verbose;
 	u_int8_t					listen_all;
 	u_int8_t					settime;
 	u_int8_t					automatic;
