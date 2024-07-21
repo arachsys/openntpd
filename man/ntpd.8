@@ -60,6 +60,7 @@ instead of the default
 Configtest mode.
 Only check the configuration file for validity.
 .It Fl s
+Allow the clock to be moved backwards at startup.
 Exit with an error if the time is not set in the foreground successfully.
 .It Fl S
 Do not attempt to set the time on startup.
@@ -94,8 +95,12 @@ is specified, at boot
 .Nm
 will stay for a maximum of 15 seconds in the foreground and make efforts to
 verify and correct the time if constraints are configured and
-satisfied or if trusted servers or sensors return results,
-and if the clock is not being moved backwards.
+satisfied or if trusted servers or sensors return results.
+The clock will not be moved backwards unless
+.Nm
+is started with the
+.Fl s
+option.
 .Pp
 After the local clock is synchronized,
 .Nm

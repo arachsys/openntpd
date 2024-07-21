@@ -248,11 +248,6 @@ handle_auto(uint8_t trusted, double offset)
 	if (!trusted && conf->constraint_median == 0)
 		return;
 
-	if (offset < AUTO_THRESHOLD) {
-		/* don't bother */
-		priv_settime(0, "offset is negative or close enough");
-		return;
-	}
 	/* collect some more */
 	v[count++] = offset;
 	if (count < AUTO_REPLIES)
@@ -264,6 +259,17 @@ handle_auto(uint8_t trusted, double offset)
 		offset = (v[AUTO_REPLIES / 2 - 1] + v[AUTO_REPLIES / 2]) / 2;
 	else
 		offset = v[AUTO_REPLIES / 2];
+
+	if (offset < 0 && conf->settime < 2) {
+		priv_settime(0, "offset is negative");
+		return;
+	}
+
+	if (-AUTO_THRESHOLD < offset && offset < AUTO_THRESHOLD) {
+		priv_settime(0, "offset is too small");
+		return;
+	}
+
 	priv_settime(offset, "");
 }
 
