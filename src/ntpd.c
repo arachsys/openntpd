@@ -40,6 +40,7 @@
 #include "ntpd.h"
 
 void		sighdlr(int);
+void		writepid(struct ntpd_conf *);
 __dead void	usage(void);
 int		auto_preconditions(const struct ntpd_conf *);
 int		main(int, char *[]);
@@ -88,6 +89,20 @@ sighdlr(int sig)
 	}
 }
 
+void
+writepid(struct ntpd_conf *lconf)
+{
+	FILE *pidfile;
+
+	if (lconf->pidfile) {
+		pidfile = fopen(lconf->pidfile, "w");
+		if (pidfile == NULL)
+			fatal("failed to write pid file");
+		fprintf(pidfile, "%ld\n", (long) getpid());
+		fclose(pidfile);
+       }
+}
+
 __dead void
 usage(void)
 {
@@ -97,7 +112,7 @@ usage(void)
 		fprintf(stderr,
 		    "usage: ntpctl -s all | peers | Sensors | status\n");
 	else
-		fprintf(stderr, "usage: %s [-dnsSv] [-f file]\n",
+		fprintf(stderr, "usage: %s [-dnsSv] [-f file] [-p file]\n",
 		    __progname);
 	exit(1);
 }
@@ -145,7 +160,7 @@ main(int argc, char *argv[])
 	memset(&lconf, 0, sizeof(lconf));
 	lconf.settime = 1;
 
-	while ((ch = getopt(argc, argv, "df:nP:sSv")) != -1) {
+	while ((ch = getopt(argc, argv, "df:np:P:sSv")) != -1) {
 		switch (ch) {
 		case 'd':
 			lconf.debug = 1;
@@ -156,6 +171,9 @@ main(int argc, char *argv[])
 		case 'n':
 			lconf.debug = 1;
 			lconf.noaction = 1;
+			break;
+		case 'p':
+			lconf.pidfile = optarg;
 			break;
 		case 'P':
 			pname = optarg;
@@ -237,9 +255,11 @@ main(int argc, char *argv[])
 	logdest = lconf.debug ? LOG_TO_STDERR : LOG_TO_SYSLOG;
 	if (!lconf.settime) {
 		log_init(logdest, lconf.verbose, LOG_DAEMON);
-		if (!lconf.debug)
+		if (!lconf.debug) {
 			if (daemon(1, 0))
 				fatal("daemon");
+			writepid(&lconf);
+		}
 	} else {
 		settime_deadline = getmonotime();
 		timeout = 100;
@@ -321,9 +341,11 @@ main(int argc, char *argv[])
 				fatalx("no replies received in time: exiting");
 			log_warnx("not setting time because %s",
 			    "no replies received in time");
-			if (!lconf.debug)
+			if (!lconf.debug) {
 				if (daemon(1, 0))
 					fatal("daemon");
+				writepid(&lconf);
+			}
 			lconf.settime = 0;
 			timeout = -1;
 		}
@@ -364,6 +386,8 @@ main(int argc, char *argv[])
 	msgbuf_clear(&ibuf->w);
 	free(ibuf);
 	log_info("terminating");
+	if (lconf.pidfile)
+		unlink(lconf.pidfile);
 	return (0);
 }
 
@@ -424,9 +448,11 @@ dispatch_imsg(struct ntpd_conf *lconf, int argc, char **argv)
 			memcpy(&d, imsg.data, sizeof(d));
 			ntpd_settime(d);
 			/* daemonize now */
-			if (!lconf->debug)
+			if (!lconf->debug) {
 				if (daemon(1, 0))
 					fatal("daemon");
+				writepid(lconf);
+			}
 			lconf->settime = 0;
 			timeout = -1;
 			break;

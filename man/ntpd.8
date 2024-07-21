@@ -25,6 +25,7 @@
 .Bk -words
 .Op Fl dnsSv
 .Op Fl f Ar file
+.Op Fl p Ar file
 .Ek
 .Sh DESCRIPTION
 The
@@ -59,6 +60,10 @@ instead of the default
 .It Fl n
 Configtest mode.
 Only check the configuration file for validity.
+.It Fl p Ar file
+Write the daemon process ID to
+.Ar file
+on startup and remove it on exit.
 .It Fl s
 Allow the clock to be moved backwards at startup.
 Exit with an error if the time is not set in the foreground successfully.
