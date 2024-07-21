@@ -69,7 +69,7 @@ getmonotime(void)
 	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
 		fatal("clock_gettime");
 
-	return (ts.tv_sec);
+	return ts.tv_sec + 1; /* don't return zero at boot */
 }
 
 
