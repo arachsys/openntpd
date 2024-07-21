@@ -1159,5 +1159,5 @@ get_string(u_int8_t *ptr, size_t len)
 		if (!(isprint(ptr[i]) || isspace(ptr[i])))
 			break;
 
-	return strndup(ptr, i);
+	return strndup((char *) ptr, i);
 }

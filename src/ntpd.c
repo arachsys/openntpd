@@ -141,7 +141,7 @@ main(int argc, char *argv[])
 	int			argc0 = argc, logdest;
 	char			**argv0 = argv;
 	char			*pname = NULL;
-	time_t			 settime_deadline;
+	time_t			 settime_deadline = 0;
 
 	if (strcmp(__progname, "ntpq") == 0) {
 		ctl_main(argc, argv);
@@ -843,7 +843,7 @@ show_peer_msg(struct imsg *imsg, int calledfromshowall)
 		    "offset       delay      jitter\n");
 	}
 
-	if (cpeer->stratum > 0)
+	if (cpeer->stratum > 0 && cpeer->stratum <= NTP_MAXSTRATUM)
 		snprintf(stratum, sizeof(stratum), "%2u", cpeer->stratum);
 	else
 		strlcpy(stratum, " -", sizeof (stratum));
