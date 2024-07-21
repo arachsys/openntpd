@@ -206,6 +206,10 @@ main(int argc, char *argv[])
 		exit(0);
 	}
 
+	if (**argv0 != '/')
+		errx(1, "%s requires execution with an absolute path",
+		    __progname);
+
 	if (geteuid())
 		errx(1, "need root privileges");
 
@@ -289,8 +293,8 @@ main(int argc, char *argv[])
 	 * Constraint processes are forked with certificates in memory,
 	 * then privdrop into chroot before speaking to the outside world.
 	 */
-	if (unveil("/usr/sbin/ntpd", "x") == -1)
-		err(1, "unveil /usr/sbin/ntpd");
+	if (unveil(*argv0, "x") == -1)
+		err(1, "unveil %s", *argv0);
 	if (pledge("stdio settime proc exec", NULL) == -1)
 		err(1, "pledge");
 
