@@ -14,15 +14,15 @@
 .\" AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 .\" OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 2 2023 $
-.Dt NTPCTL 8
+.Dd $Mdocdate: July 23 2024 $
+.Dt NTPQ 8
 .Os
 .Sh NAME
-.Nm ntpctl
-.Nd control the NTP daemon
+.Nm ntpq
+.Nd display information about the running NTP daemon
 .Sh SYNOPSIS
-.Nm ntpctl
-.Fl s Cm all | peers | Sensors | status
+.Nm ntpq
+.Op Cm all | peers | sensors | status
 .Sh DESCRIPTION
 The
 .Nm
@@ -30,11 +30,9 @@ program displays information about the running
 .Xr ntpd 8
 daemon.
 .Pp
-The options are as follows:
-.Bl -tag -width "-s modifierX"
-.It Fl s Cm all | peers | Sensors | status
-Used to display information about the running daemon.
-Keywords may be abbreviated.
+The optional keyword selects the type of data to show, defaulting to
+.Cm all
+available information.
 .Pp
 .Cm all
 shows all data available.

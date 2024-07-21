@@ -53,7 +53,6 @@ void		ntpd_settime(double);
 void		readfreq(void);
 int		writefreq(double);
 void		ctl_main(int, char*[]);
-const char     *ctl_lookup_option(char *, const char **);
 void		show_status_msg(struct imsg *);
 void		show_peer_msg(struct imsg *, int);
 void		show_sensor_msg(struct imsg *, int);
@@ -65,12 +64,6 @@ struct imsgbuf		*ibuf;
 int			 timeout = -1;
 
 extern u_int		 constraint_cnt;
-
-const char		*showopt;
-
-static const char *ctl_showopt_list[] = {
-	"peers", "Sensors", "status", "all", NULL
-};
 
 void
 sighdlr(int sig)
@@ -108,9 +101,9 @@ usage(void)
 {
 	extern char *__progname;
 
-	if (strcmp(__progname, "ntpctl") == 0)
+	if (strcmp(__progname, "ntpq") == 0)
 		fprintf(stderr,
-		    "usage: ntpctl -s all | peers | Sensors | status\n");
+		    "usage: ntpq [ all | peers | sensors | status ]\n");
 	else
 		fprintf(stderr, "usage: %s [-dnsSv] [-f file] [-p file]\n",
 		    __progname);
@@ -150,7 +143,7 @@ main(int argc, char *argv[])
 	char			*pname = NULL;
 	time_t			 settime_deadline;
 
-	if (strcmp(__progname, "ntpctl") == 0) {
+	if (strcmp(__progname, "ntpq") == 0) {
 		ctl_main(argc, argv);
 		/* NOTREACHED */
 	}
@@ -630,54 +623,33 @@ ctl_main(int argc, char *argv[])
 	struct sockaddr_un	 sa;
 	struct imsg		 imsg;
 	struct imsgbuf		*ibuf_ctl;
-	int			 fd, n, done, ch, action;
+	int			 fd, n, done, action;
 	char			*sockname;
 
 	sockname = CTLSOCKET;
 
-	if (argc < 2) {
+	if (argc > 2) {
 		usage();
 		/* NOTREACHED */
 	}
 
-	while ((ch = getopt(argc, argv, "s:")) != -1) {
-		switch (ch) {
-		case 's':
-			showopt = ctl_lookup_option(optarg, ctl_showopt_list);
-			if (showopt == NULL) {
-				warnx("Unknown show modifier '%s'", optarg);
-				usage();
-			}
-			break;
-		default:
-			usage();
-			/* NOTREACHED */
-		}
-	}
+	if (argc < 2 || !strcasecmp(argv[1], "all"))
+		action = CTL_SHOW_ALL;
+	else if (!strcasecmp(argv[1], "peers"))
+		action = CTL_SHOW_PEERS;
+	else if (!strcasecmp(argv[1], "status"))
+		action = CTL_SHOW_STATUS;
+	else if (!strcasecmp(argv[1], "sensors"))
+		action = CTL_SHOW_SENSORS;
+	else
+		action = -1;
 
-	action = -1;
-	if (showopt != NULL) {
-		switch (*showopt) {
-		case 'p':
-			action = CTL_SHOW_PEERS;
-			break;
-		case 's':
-			action = CTL_SHOW_STATUS;
-			break;
-		case 'S':
-			action = CTL_SHOW_SENSORS;
-			break;
-		case 'a':
-			action = CTL_SHOW_ALL;
-			break;
-		}
-	}
 	if (action == -1)
 		usage();
 		/* NOTREACHED */
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
-		err(1, "ntpctl: socket");
+		err(1, "socket");
 
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
@@ -725,7 +697,7 @@ ctl_main(int argc, char *argv[])
 		if ((n = imsg_read(ibuf_ctl)) == -1 && errno != EAGAIN)
 			err(1, "ibuf_ctl: imsg_read error");
 		if (n == 0)
-			errx(1, "ntpctl: pipe closed");
+			errx(1, "pipe closed");
 
 		while (!done) {
 			if ((n = imsg_get(ibuf_ctl, &imsg)) == -1)
@@ -782,21 +754,6 @@ ctl_main(int argc, char *argv[])
 	close(fd);
 	free(ibuf_ctl);
 	exit(0);
-}
-
-const char *
-ctl_lookup_option(char *cmd, const char **list)
-{
-	const char *item = NULL;
-	if (cmd != NULL && *cmd)
-		for (; *list; list++)
-			if (!strncmp(cmd, *list, strlen(cmd))) {
-				if (item == NULL)
-					item = *list;
-				else
-					errx(1, "%s is ambiguous", cmd);
-			}
-	return (item);
 }
 
 void
