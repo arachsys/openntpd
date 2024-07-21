@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e -o pipefail
+shopt -s dotglob extglob nullglob
+cd -- "$(git -C "${0%/*}" rev-parse --show-toplevel)"
+
+if [[ $@ != @(+([0-9a-f])|master) ]]; then
+  echo "Usage: ${0##*/} ( COMMIT | master )"
+  echo "Update upstream branch then merge changes into master."
+  echo "This maintainer script does not attempt to be portable."
+  exit 64
+elif ! git diff --exit-code --quiet; then
+  echo "Uncommitted changes in the working directory"
+  exit 1
+elif ! git diff --cached --exit-code --quiet; then
+  echo "Uncommitted changes in the index"
+  exit 1
+fi >&2
+
+TMP=$(mktemp -d tmp-XXXXXX)
+trap 'rm -r $TMP' EXIT
+
+echo "Cloning upstream sources for sparse checkout:"
+git clone --no-checkout --filter=blob:none  --shallow-since '6 months' \
+  https://github.com/openbsd/src $TMP
+git -C $TMP sparse-checkout set lib/libutil sys/sys usr.sbin/ntpd
+git -C $TMP checkout -q $1
+
+git checkout upstream
+git rm -q -r src
+mkdir -p src
+
+for FILE in $TMP/lib/libutil/imsg{,-buffer}.[ch] $TMP/sys/sys/queue.h \
+    $TMP/usr.sbin/ntpd/!(sensors).[chy58]; do
+  sed ':a;s/[ \t]*$//;/^\n*$/{$d;N;ba}' "$FILE" \
+    | unexpand >"src/${FILE##*/}"
+  git add "src/${FILE##*/}"
+done
+
+if git diff --cached --exit-code --quiet; then
+  echo "No upstream changes to merge"
+  git checkout master
+else
+  SNAPSHOT=$(git -C $TMP log -1 --abbrev=8 --pretty='%cs (%h)')
+  git commit -m "Update upstream files from OpenBSD $SNAPSHOT"
+  git checkout master
+  git merge -m "Merge from upstream OpenBSD $SNAPSHOT" upstream
+
+  echo "Merged openntpd ready to review, build and test"
+  echo "Sign: git tag -m openntpd-VERSION -s openntpd-VERSION"
+  echo "Push: git push --tags origin upstream master"
+fi
