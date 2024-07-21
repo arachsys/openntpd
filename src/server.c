@@ -35,7 +35,9 @@ setup_listeners(struct servent *se, struct ntpd_conf *lconf, u_int *cnt)
 	struct listen_addr	*la, *nla, *lap;
 	struct ifaddrs		*ifa, *ifap;
 	struct sockaddr		*sa;
+#ifdef SO_RTABLE
 	struct if_data		*ifd;
+#endif
 	u_int8_t		*a6;
 	size_t			 sa6len = sizeof(struct in6_addr);
 	u_int			 new_cnt = 0;
@@ -51,14 +53,16 @@ setup_listeners(struct servent *se, struct ntpd_conf *lconf, u_int *cnt)
 				sa = ifap->ifa_addr;
 				if (sa == NULL || SA_LEN(sa) == 0)
 					continue;
+#ifdef SO_RTABLE
 				if (sa->sa_family == AF_LINK) {
 					ifd = ifap->ifa_data;
 					rdomain = ifd->ifi_rdomain;
 				}
+				if (lap->rtable != -1 && rdomain != lap->rtable)
+					continue;
+#endif
 				if (sa->sa_family != AF_INET &&
 				    sa->sa_family != AF_INET6)
-					continue;
-				if (lap->rtable != -1 && rdomain != lap->rtable)
 					continue;
 
 				if (sa->sa_family == AF_INET &&
@@ -112,9 +116,13 @@ setup_listeners(struct servent *se, struct ntpd_conf *lconf, u_int *cnt)
 			fatalx("unknown address family");
 		}
 
-		log_info("listening on %s %s",
-		    log_sockaddr((struct sockaddr *)&la->sa),
-		    print_rtable(la->rtable));
+		if (la->rtable > 0)
+			log_info("listening on %s rtable %d",
+			    log_sockaddr((struct sockaddr *)&la->sa),
+			    la->rtable);
+		else
+			log_info("listening on %s",
+			    log_sockaddr((struct sockaddr *)&la->sa));
 
 		if ((la->fd = socket(la->sa.ss_family, SOCK_DGRAM, 0)) == -1)
 			fatal("socket");
@@ -123,10 +131,12 @@ setup_listeners(struct servent *se, struct ntpd_conf *lconf, u_int *cnt)
 		    IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) == -1)
 			log_warn("setsockopt IPTOS_LOWDELAY");
 
+#ifdef SO_RTABLE
 		if (la->rtable != -1 &&
 		    setsockopt(la->fd, SOL_SOCKET, SO_RTABLE, &la->rtable,
 		    sizeof(la->rtable)) == -1)
 			fatal("setup_listeners setsockopt SO_RTABLE");
+#endif
 
 		if (bind(la->fd, (struct sockaddr *)&la->sa,
 		    SA_LEN((struct sockaddr *)&la->sa)) == -1) {

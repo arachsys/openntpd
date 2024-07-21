@@ -139,18 +139,6 @@ d_to_sfp(double d)
 	return (sfp);
 }
 
-char *
-print_rtable(int r)
-{
-	static char b[11];
-
-	b[0] = 0;
-	if (r > 0)
-		snprintf(b, sizeof(b), "rtable %d", r);
-
-	return (b);
-}
-
 const char *
 log_sockaddr(struct sockaddr *sa)
 {

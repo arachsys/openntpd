@@ -470,11 +470,13 @@ weight		: WEIGHT NUMBER	{
 			opts.weight = $2;
 		}
 rtable		: RTABLE NUMBER {
+#ifdef RT_RTABLEID_MAX
 			if ($2 < 0 || $2 > RT_TABLEID_MAX) {
 				yyerror("rtable must be between 1"
 				    " and RT_TABLEID_MAX");
 				YYERROR;
 			}
+#endif
 			opts.rtable = $2;
 		}
 		;

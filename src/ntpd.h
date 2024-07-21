@@ -411,7 +411,6 @@ double			 lfp_to_d(struct l_fixedpt);
 struct l_fixedpt	 d_to_lfp(double);
 double			 sfp_to_d(struct s_fixedpt);
 struct s_fixedpt	 d_to_sfp(double);
-char			*print_rtable(int);
 const char		*log_sockaddr(struct sockaddr *);
 const char		*log_ntp_addr(struct ntp_addr *);
 pid_t			 start_child(char *, int, int, char **);
