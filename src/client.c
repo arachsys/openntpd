@@ -152,9 +152,16 @@ client_query(struct ntp_peer *p)
 		struct sockaddr *qa4 = (struct sockaddr *)&p->query_addr4;
 		struct sockaddr *qa6 = (struct sockaddr *)&p->query_addr6;
 
-		if ((p->query.fd = socket(p->addr->ss.ss_family, SOCK_DGRAM,
-		    0)) == -1)
+		p->query.fd = socket(p->addr->ss.ss_family, SOCK_DGRAM, 0);
+		if (p->query.fd == -1) {
+			if (errno == EAFNOSUPPORT) {
+				log_debug("skipping unsupported address");
+				client_nextaddr(p);
+				set_next(p, error_interval());
+				return (-1);
+			}
 			fatal("client_query socket");
+		}
 
 		if (p->addr->ss.ss_family == qa4->sa_family) {
 			if (bind(p->query.fd, qa4, SA_LEN(qa4)) == -1)
