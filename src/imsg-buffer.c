@@ -93,9 +93,15 @@ ibuf_realloc(struct ibuf *buf, size_t len)
 		return (-1);
 	}
 
-	b = recallocarray(buf->buf, buf->size, buf->wpos + len, 1);
+	if (buf->buf && buf->size > buf->wpos + len)
+		explicit_bzero(buf->buf + buf->wpos + len,
+			buf->size - buf->wpos - len);
+
+	b = realloc(buf->buf, buf->wpos + len);
 	if (b == NULL)
 		return (-1);
+	if (buf->size < buf->wpos + len)
+		memset(b + buf->size, 0, buf->wpos + len - buf->size);
 	buf->buf = b;
 	buf->size = buf->wpos + len;
 
@@ -501,7 +507,10 @@ ibuf_free(struct ibuf *buf)
 		abort();	/* abort before causing more harm */
 	if (buf->fd != -1)
 		close(buf->fd);
-	freezero(buf->buf, buf->size);
+	if (buf->buf) {
+		explicit_bzero(buf->buf, buf->size);
+		free(buf->buf);
+	}
 	free(buf);
 }
 

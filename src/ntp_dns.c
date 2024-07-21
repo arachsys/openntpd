@@ -110,7 +110,7 @@ ntp_dns(struct ntpd_conf *nconf, struct passwd *pw)
 		if (ibuf_dns->w.queued)
 			pfd[0].events |= POLLOUT;
 
-		if ((nfds = poll(pfd, 1, INFTIM)) == -1)
+		if ((nfds = poll(pfd, 1, -1)) == -1)
 			if (errno != EINTR) {
 				log_warn("poll error");
 				quit_dns = 1;

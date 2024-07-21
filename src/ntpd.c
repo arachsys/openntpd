@@ -62,7 +62,7 @@ volatile sig_atomic_t	 quit = 0;
 volatile sig_atomic_t	 reconfig = 0;
 volatile sig_atomic_t	 sigchld = 0;
 struct imsgbuf		*ibuf;
-int			 timeout = INFTIM;
+int			 timeout = -1;
 
 extern u_int		 constraint_cnt;
 
@@ -323,7 +323,7 @@ main(int argc, char *argv[])
 		if (nfds == 0 && lconf.settime &&
 		    getmonotime() > settime_deadline + SETTIME_TIMEOUT) {
 			lconf.settime = 0;
-			timeout = INFTIM;
+			timeout = -1;
 			log_init(logdest, lconf.verbose, LOG_DAEMON);
 			log_warnx("no reply received in time, skipping initial "
 			    "time setting");
@@ -378,7 +378,7 @@ check_child(void)
 	pid_t	 pid;
 
 	do {
-		pid = waitpid(WAIT_ANY, &status, WNOHANG);
+		pid = waitpid(-1, &status, WNOHANG);
 		if (pid <= 0)
 			continue;
 
@@ -432,7 +432,7 @@ dispatch_imsg(struct ntpd_conf *lconf, int argc, char **argv)
 				if (daemon(1, 0))
 					fatal("daemon");
 			lconf->settime = 0;
-			timeout = INFTIM;
+			timeout = -1;
 			break;
 		case IMSG_CONSTRAINT_QUERY:
 			priv_constraint_msg(imsg.hdr.peerid,

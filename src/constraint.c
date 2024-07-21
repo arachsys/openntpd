@@ -372,7 +372,7 @@ priv_constraint_child(const char *pw_dir, uid_t pw_uid, gid_t pw_gid)
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 	sa.sa_handler = SIG_DFL;
-	for (i = 1; i < _NSIG; i++)
+	for (i = 1; i < NSIG; i++)
 		sigaction(i, &sa, NULL);
 
 	if (pledge("stdio inet", NULL) == -1)

@@ -725,14 +725,10 @@ yylex(void)
 		if (p == buf + 1 && buf[0] == '-')
 			goto nodigits;
 		if (c == EOF || allowed_to_end_number(c)) {
-			const char *errstr = NULL;
-
-			*p = '\0';
-			yylval.v.number = strtonum(buf, LLONG_MIN,
-			    LLONG_MAX, &errstr);
-			if (errstr) {
-				yyerror("\"%s\" invalid number: %s",
-				    buf, errstr);
+			*p = errno = 0;
+			yylval.v.number = strtoll(buf, NULL, 10);
+			if (errno) {
+				yyerror("invalid number: %s", buf);
 				return (findeol());
 			}
 			return (NUMBER);
