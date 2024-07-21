@@ -256,7 +256,7 @@ main(int argc, char *argv[])
 	if (!lconf.settime) {
 		log_init(logdest, lconf.verbose, LOG_DAEMON);
 		if (!lconf.debug) {
-			if (daemon(1, 0))
+			if (getsid(0) != getpid() && daemon(1, 0))
 				fatal("daemon");
 			writepid(&lconf);
 		}
@@ -342,7 +342,7 @@ main(int argc, char *argv[])
 			log_warnx("not setting time because %s",
 			    "no replies received in time");
 			if (!lconf.debug) {
-				if (daemon(1, 0))
+				if (getsid(0) != getpid() && daemon(1, 0))
 					fatal("daemon");
 				writepid(&lconf);
 			}
@@ -449,7 +449,7 @@ dispatch_imsg(struct ntpd_conf *lconf, int argc, char **argv)
 			ntpd_settime(d);
 			/* daemonize now */
 			if (!lconf->debug) {
-				if (daemon(1, 0))
+				if (getsid(0) != getpid() && daemon(1, 0))
 					fatal("daemon");
 				writepid(lconf);
 			}
