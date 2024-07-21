@@ -119,15 +119,15 @@ starts up, it reads settings from its configuration file,
 typically
 .Xr ntpd.conf 5 ,
 and its initial clock drift from
-.Pa /var/db/ntpd.drift .
+.Pa /var/lib/ntpd.drift .
 Clock drift is periodically written to the drift file thereafter.
 .Sh FILES
-.Bl -tag -width "/var/db/ntpd.driftXXX" -compact
+.Bl -tag -width "/var/lib/ntpd.driftXXX" -compact
 .It Pa /etc/ntpd.conf
 Default configuration file.
-.It Pa /var/db/ntpd.drift
+.It Pa /var/lib/ntpd.drift
 Drift file.
-.It Pa /var/run/ntpd.sock
+.It Pa /run/ntpd.sock
 Socket file for communication with
 .Xr ntpq 8 .
 .El

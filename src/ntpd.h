@@ -44,11 +44,6 @@
 	 (x)->sa_family == AF_INET6 ? sizeof(struct sockaddr_in6) : \
 	 sizeof(struct sockaddr))
 
-#define	NTPD_USER	"_ntp"
-#define	CONFFILE	"/etc/ntpd.conf"
-#define DRIFTFILE	"/var/db/ntpd.drift"
-#define	CTLSOCKET	"/var/run/ntpd.sock"
-
 #define	INTERVAL_QUERY_NORMAL		30	/* sync to peers every n secs */
 #define	INTERVAL_QUERY_PATHETIC		60
 #define	INTERVAL_QUERY_AGGRESSIVE	5
