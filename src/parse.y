@@ -135,20 +135,13 @@ main		: LISTEN ON address listen_opts	{
 			free($3);
 		}
 		| QUERY FROM STRING {
-			struct sockaddr_in sin4;
-			struct sockaddr_in6 sin6;
-
-			memset(&sin4, 0, sizeof(sin4));
-			sin4.sin_family = AF_INET;
-			sin4.sin_len = sizeof(struct sockaddr_in);
-			memset(&sin6, 0, sizeof(sin6));
-			sin6.sin6_family = AF_INET6;
-			sin6.sin6_len = sizeof(struct sockaddr_in6);
+			struct sockaddr_in sin4 = { .sin_family = AF_INET };
+			struct sockaddr_in6 sin6 = { .sin6_family = AF_INET6 };
 
 			if (inet_pton(AF_INET, $3, &sin4.sin_addr) == 1)
-				memcpy(&query_addr4, &sin4, sin4.sin_len);
+				memcpy(&query_addr4, &sin4, sizeof(sin4));
 			else if (inet_pton(AF_INET6, $3, &sin6.sin6_addr) == 1)
-				memcpy(&query_addr6, &sin6, sin6.sin6_len);
+				memcpy(&query_addr6, &sin6, sizeof(sin6));
 			else {
 				yyerror("invalid IPv4 or IPv6 address: %s\n",
 				    $3);

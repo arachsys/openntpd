@@ -37,6 +37,12 @@
 
 #define MAXIMUM(a, b)	((a) > (b) ? (a) : (b))
 
+#undef SA_LEN
+#define SA_LEN(x) \
+	((x)->sa_family == AF_INET ? sizeof(struct sockaddr_in) : \
+	 (x)->sa_family == AF_INET6 ? sizeof(struct sockaddr_in6) : \
+	 sizeof(struct sockaddr))
+
 #define	NTPD_USER	"_ntp"
 #define	CONFFILE	"/etc/ntpd.conf"
 #define DRIFTFILE	"/var/db/ntpd.drift"
