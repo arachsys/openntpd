@@ -396,7 +396,6 @@ priv_constraint_child(const char *pw_dir, uid_t pw_uid, gid_t pw_gid)
 
 	log_debug("constraint request to %s", addr);
 	setproctitle("constraint from %s", addr);
-	(void)closefrom(CONSTRAINT_PASSFD + 1);
 
 	/*
 	 * Set the close-on-exec flag to prevent leaking the communication
