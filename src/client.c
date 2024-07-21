@@ -19,7 +19,6 @@
 
 #include <sys/types.h>
 #include <errno.h>
-#include <md5.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -411,15 +410,13 @@ client_dispatch(struct ntp_peer *p, u_int8_t settime, u_int8_t automatic)
 		p->reply[p->shift].status.send_refid =
 		    ((struct sockaddr_in *)&p->addr->ss)->sin_addr.s_addr;
 	} else if (p->addr->ss.ss_family == AF_INET6) {
-		MD5_CTX		context;
-		u_int8_t	digest[MD5_DIGEST_LENGTH];
+		u_int32_t digest;
+		u_int8_t i, *s;
 
-		MD5Init(&context);
-		MD5Update(&context, ((struct sockaddr_in6 *)&p->addr->ss)->
-		    sin6_addr.s6_addr, sizeof(struct in6_addr));
-		MD5Final(digest, &context);
-		memcpy((char *)&p->reply[p->shift].status.send_refid, digest,
-		    sizeof(u_int32_t));
+		s = ((struct sockaddr_in6 *)&p->addr->ss)->sin6_addr.s6_addr;
+		for (i = 0, digest = 5381; i < sizeof(struct in6_addr); i++)
+			digest += (digest << 5) + s[i]; /* djb2 */
+		p->reply[p->shift].status.send_refid = digest;
 	} else
 		p->reply[p->shift].status.send_refid = msg.xmttime.fractionl;
 
