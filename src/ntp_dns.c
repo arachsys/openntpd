@@ -41,7 +41,6 @@ extern int		 non_numeric;
 
 void	sighdlr_dns(int);
 int	dns_dispatch_imsg(struct ntpd_conf *);
-int	probe_root_ns(void);
 void	probe_root(void);
 
 void
@@ -211,43 +210,21 @@ dns_dispatch_imsg(struct ntpd_conf *nconf)
 	return (0);
 }
 
-int
-probe_root_ns(void)
-{
-	int ret;
-	int old_retrans, old_retry, old_options;
-	unsigned char buf[4096];
-
-	old_retrans = _res.retrans;
-	old_retry = _res.retry;
-	old_options = _res.options;
-	_res.retrans = 1;
-	_res.retry = 1;
-#ifdef RES_USE_CD
-	_res.options |= RES_USE_CD;
-#endif
-
-	ret = res_query(".", C_IN, T_NS, buf, sizeof(buf));
-
-	_res.retrans = old_retrans;
-	_res.retry = old_retry;
-	_res.options = old_options;
-
-	return ret;
-}
-
 void
 probe_root(void)
 {
-	int		n;
+	unsigned char	buf[4096];
+	int		result, retry = 2;
 
-	n = probe_root_ns();
-	if (n < 0) {
+retry:
+	result = res_query(".", C_IN, T_NS, buf, sizeof(buf));
+	if (result < 0 && retry-- > 0) {
 		/* give programs like unwind a second chance */
 		sleep(1);
-		n = probe_root_ns();
+		goto retry;
 	}
-	if (imsg_compose(ibuf_dns, IMSG_PROBE_ROOT, 0, 0, -1, &n,
+
+	if (imsg_compose(ibuf_dns, IMSG_PROBE_ROOT, 0, 0, -1, &result,
 	    sizeof(int)) == -1)
 		fatalx("probe_root");
 }
