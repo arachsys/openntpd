@@ -1,0 +1,51 @@
+openntpd-arachsys
+=================
+
+This is an alternative multiplatform repackaging of OpenBSD's openntpd,
+compatible with Linux glibc, Linux musl, FreeBSD, NetBSD and DragonFly,
+as well as the original OpenBSD.
+
+It is actively maintained, includes a number of fixes and quality-of-life
+improvements and isn't obfuscated by autoconf, automake and libtool.
+
+Portability is hard and autotools are (perhaps) justified if you need to
+target obsolete and obscure platforms, but the informal consensus between
+modern free unix systems is increasingly broad. An NTP daemon needs to
+make kernel-specific clock adjustments, but there is no reason the rest
+of the code can't be portable without #ifdef soup - as demonstrated by
+the simplicity of the adaptations here.
+
+
+Building and installing
+-----------------------
+
+Run 'make install' at the top of the source tree to install ntpd and
+ntpq in /bin. You can set DESTDIR, PREFIX and/or BINDIR to install in
+a different location, and set MANDIR to install man pages along with
+the binaries.
+
+The privilege-separation user, configuration file path, control socket
+location and drift file path can be changed with USERNAME, CONFFILE,
+CTLSOCKET and DRIFTFILE respectively.
+
+The code should build unmodified on sufficiently up-to-date versions of
+Linux glibc, Linux musl, FreeBSD, NetBSD, OpenBSD and DragonFly using
+either clang or gcc, and either BSD or GNU make.
+
+TLS constraints require libtls from libressl and the Makefile assumes this
+can be found on the standard include and link paths. Override CFLAGS and
+LDFLAGS in the usual way if it is hidden elsewhere. libtls can be built
+standalone or statically without replacing the system libssl and libcrypto.
+
+On Linux, glibc didn't provide strlcat() until version 2.38 in July 2023,
+so compatibility may be delayed on distributions which confuse stability
+with obsolescence.
+
+Please report any problems or bugs to Chris Webb <chris@arachsys.com>.
+
+
+Copying
+-------
+
+This software was written by the OpenBSD contributors and is distributed
+as Free Software under the terms of the ISC license in COPYING.
