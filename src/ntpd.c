@@ -159,7 +159,7 @@ main(int argc, char *argv[])
 	lconf.settime = 1;
 
 	initproctitle(argv, environ);
-	while ((ch = getopt(argc, argv, "df:np:P:sSv")) != -1) {
+	while ((ch = getopt(argc, argv, ":df:np:P:sSv")) != -1) {
 		switch (ch) {
 		case 'd':
 			lconf.debug = 1;
