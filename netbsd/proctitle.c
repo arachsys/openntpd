@@ -6,7 +6,7 @@ void
 initproctitle(char **argv, char **envp)
 {
 	const int mib[4] = { CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME};
-	static char path[PATH_MAX];
+	static char path[PATH_MAX + 1];
 	size_t length = PATH_MAX;
 
 	if (argv[0][0] == '/')
