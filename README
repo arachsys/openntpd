@@ -26,7 +26,10 @@ the binaries.
 
 The privilege-separation user, configuration file path, control socket
 location and drift file path can be changed with USERNAME, CONFFILE,
-CTLSOCKET and DRIFTFILE respectively.
+CTLSOCKET and DRIFTFILE respectively. The defaults are equivalent to
+
+  make install BINDIR=/bin USERNAME=ntp CONFFILE=/etc/ntpd.conf \
+    CTLSOCKET=/run/ntpd.sock DRIFTFILE=/var/lib/ntpd.drift
 
 The code should build unmodified on sufficiently up-to-date versions of
 Linux glibc, Linux musl, FreeBSD, NetBSD, OpenBSD and DragonFly using
