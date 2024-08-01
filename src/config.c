@@ -135,15 +135,6 @@ host_dns(const char *s, int synced, struct ntp_addr **hn)
 
 	log_debug("trying to resolve %s", s);
 	error = host_dns1(s, hn, 0);
-#ifdef RES_USE_CD
-	if (!synced && error <= 0) {
-		int save_opts = _res.options;
-		log_debug("no luck, trying to resolve %s without checking", s);
-		_res.options |= RES_USE_CD;
-		error = host_dns1(s, hn, 1);
-		_res.options = save_opts;
-	}
-#endif
 	log_debug("resolve %s done: %d", s, error);
 	return error;
 }
