@@ -835,7 +835,8 @@ constraint_update(void)
 	/* calculate median */
 	i = cnt / 2;
 	if (cnt % 2 == 0)
-		conf->constraint_median = (values[i - 1] + values[i]) / 2;
+		conf->constraint_median = values[i - 1] +
+		    (values[i] - values[i - 1]) / 2;
 	else
 		conf->constraint_median = values[i];
 
