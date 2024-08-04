@@ -467,6 +467,9 @@ dispatch_imsg(struct ntpd_conf *lconf, int argc, char **argv)
 		case IMSG_CONSTRAINT_KILL:
 			priv_constraint_kill(imsg.hdr.peerid);
 			break;
+		case IMSG_UNSYNCED:
+			setsync(0);
+			break;
 		default:
 			break;
 		}

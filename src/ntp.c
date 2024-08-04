@@ -184,7 +184,9 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 	conf->freq.y = 0.0;
 	conf->freq.overall_offset = 0.0;
 
+	imsg_compose(ibuf_main, IMSG_UNSYNCED, 0, 0, -1, NULL, 0);
 	conf->status.synced = 0;
+
 	clock_getres(CLOCK_REALTIME, &tp);
 	b = 1000000000 / tp.tv_nsec;	/* convert to Hz */
 	for (a = 0; b > 1; a--, b >>= 1)
@@ -457,6 +459,8 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 		interval += SCALE_INTERVAL(interval) - 1;
 		if (conf->status.synced && last_action + 3 * interval < now) {
 			log_info("clock is now unsynced due to lack of replies");
+			imsg_compose(ibuf_main, IMSG_UNSYNCED, 0, 0, -1,
+			    NULL, 0);
 			conf->status.synced = 0;
 			conf->scale = 1;
 			priv_dns(IMSG_UNSYNCED, NULL, 0);
