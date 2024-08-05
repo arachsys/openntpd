@@ -267,13 +267,13 @@ handle_auto(uint8_t trusted, double offset)
 	else
 		offset = v[AUTO_REPLIES / 2];
 
-	if (offset < 0 && conf->settime < 2) {
-		priv_settime(0, "offset is negative");
+	if (-AUTO_THRESHOLD < offset && offset < AUTO_THRESHOLD) {
+		priv_settime(0, "offset is too small");
 		return;
 	}
 
-	if (-AUTO_THRESHOLD < offset && offset < AUTO_THRESHOLD) {
-		priv_settime(0, "offset is too small");
+	if (offset < 0 && conf->settime < 2) {
+		priv_settime(0, "offset is negative");
 		return;
 	}
 
