@@ -858,11 +858,29 @@ offset_compare(const void *aa, const void *bb)
 void
 priv_settime(double offset, char *msg)
 {
-	if (offset == 0)
-		log_info("not setting time because %s", msg);
+	struct ntp_peer	*p;
+	struct ntp_sensor *s;
+	int i;
+
 	imsg_compose(ibuf_main, IMSG_SETTIME, 0, 0, -1,
 	    &offset, sizeof(offset));
 	conf->settime = 0;
+
+	if (offset == 0) {
+		log_info("not setting time because %s", msg);
+		return;
+	}
+
+	TAILQ_FOREACH(p, &conf->ntp_peers, entry) {
+		for (i = 0; i < OFFSET_ARRAY_SIZE; i++)
+			p->reply[i].offset -= offset;
+		p->update.good = 0;
+	}
+	TAILQ_FOREACH(s, &conf->ntp_sensors, entry) {
+		for (i = 0; i < SENSOR_OFFSETS; i++)
+			s->offsets[i].offset -= offset;
+		s->update.offset -= offset;
+	}
 }
 
 void
