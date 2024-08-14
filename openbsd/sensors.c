@@ -17,7 +17,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/queue.h>
 #include <sys/time.h>
 #include <sys/sensors.h>
 #include <sys/sysctl.h>
