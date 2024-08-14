@@ -581,30 +581,31 @@ void
 readfreq(void)
 {
 	int64_t current;
-	int fd;
 	double d;
-
-	fd = open(DRIFTFILE, O_RDWR);
-	if (fd == -1) {
-		log_warnx("creating new %s", DRIFTFILE);
-		current = 0;
-		if (adjfreq(&current, NULL) == -1)
-			log_warn("adjfreq reset failed");
-		freqfp = fopen(DRIFTFILE, "w");
-		return;
-	}
-
-	freqfp = fdopen(fd, "r+");
 
 	/* if we're adjusting frequency already, don't override */
 	if (adjfreq(NULL, &current) == -1)
 		log_warn("adjfreq failed");
-	else if (current == 0 && freqfp) {
-		if (fscanf(freqfp, "%lf", &d) == 1) {
-			d /= 1e6;	/* scale from ppm */
-			ntpd_adjfreq(d, 0);
-		} else
-			log_warnx("%s is empty", DRIFTFILE);
+	else if (current == 0) {
+		freqfp = fopen(DRIFTFILE, "r");
+		if (freqfp) {
+			if (fscanf(freqfp, "%lf", &d) == 1) {
+				/* scale from ppm to adjfreq units */
+				current = d * 1e3 * (1LL << 32);
+				if (adjfreq(&current, NULL) == -1)
+					log_warn("adjfreq failed");
+			} else {
+				log_warnx("%s is empty", DRIFTFILE);
+			}
+			fclose(freqfp);
+		}
+	}
+
+	freqfp = fopen(DRIFTFILE, "r+");
+	if (freqfp == NULL) {
+		freqfp = fopen(DRIFTFILE, "w+");
+		log_warnx(freqfp ? "creating new %s" : "can't create %s",
+		    DRIFTFILE);
 	}
 }
 
