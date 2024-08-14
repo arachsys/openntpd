@@ -31,11 +31,15 @@ git rm -q -r src
 mkdir -p src
 
 for FILE in $TMP/lib/libutil/imsg{,-buffer}.[ch] $TMP/sys/sys/queue.h \
-    $TMP/usr.sbin/ntpd/!(sensors).[chy58]; do
+    $TMP/usr.sbin/ntpd/*.[chy58]; do
   sed ':a;s/[ \t]*$//;/^\n*$/{$d;N;ba}' "$FILE" \
     | unexpand >"src/${FILE##*/}"
   git add "src/${FILE##*/}"
 done
+
+mkdir -p man openbsd
+git mv -f src/*.[58] man
+git mv -f src/sensors.c openbsd
 
 if git diff --cached --exit-code --quiet; then
   echo "No upstream changes to merge"
