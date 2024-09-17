@@ -171,13 +171,9 @@ server_dispatch(int fd, struct ntpd_conf *lconf)
 	fsa_len = sizeof(fsa);
 	if ((size = recvfrom(fd, &buf, sizeof(buf), 0,
 	    (struct sockaddr *)&fsa, &fsa_len)) == -1) {
-		if (errno == EHOSTUNREACH || errno == EHOSTDOWN ||
-		    errno == ENETUNREACH || errno == ENETDOWN) {
-			log_warn("recvfrom %s",
-			    log_sockaddr((struct sockaddr *)&fsa));
-			return (0);
-		} else
-			fatal("recvfrom");
+		log_warn("recvfrom %s",
+		    log_sockaddr((struct sockaddr *)&fsa));
+		return (0);
 	}
 
 	rectime = gettime_corrected();

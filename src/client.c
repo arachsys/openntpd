@@ -174,19 +174,15 @@ client_query(struct ntp_peer *p)
 		}
 
 		if (connect(p->query.fd, sa, SA_LEN(sa)) == -1) {
-			if (errno == ECONNREFUSED || errno == ENETUNREACH ||
-			    errno == EHOSTUNREACH || errno == EADDRNOTAVAIL) {
-				/* cycle through addresses, but do increase
-				   senderrors */
-				client_nextaddr(p);
-				if (p->addr == NULL)
-					p->addr = p->addr_head.a;
-				set_next(p, MAXIMUM(SETTIME_TIMEOUT,
-				    scale_interval(INTERVAL_QUERY_AGGRESSIVE)));
-				p->senderrors++;
-				return (-1);
-			} else
-				fatal("client_query connect");
+			/* cycle through addresses, but do increase
+			   senderrors */
+			client_nextaddr(p);
+			if (p->addr == NULL)
+				p->addr = p->addr_head.a;
+			set_next(p, MAXIMUM(SETTIME_TIMEOUT,
+			    scale_interval(INTERVAL_QUERY_AGGRESSIVE)));
+			p->senderrors++;
+			return (-1);
 		}
 		val = IPTOS_LOWDELAY;
 		if (p->addr->ss.ss_family == AF_INET && setsockopt(p->query.fd,
@@ -312,15 +308,9 @@ client_dispatch(struct ntp_peer *p, u_int8_t settime, u_int8_t automatic)
 	somsg.msg_controllen = sizeof(cmsgbuf.buf);
 
 	if ((size = recvmsg(p->query.fd, &somsg, 0)) == -1) {
-		if (errno == EHOSTUNREACH || errno == EHOSTDOWN ||
-		    errno == ENETUNREACH || errno == ENETDOWN ||
-		    errno == ECONNREFUSED || errno == EADDRNOTAVAIL ||
-		    errno == ENOPROTOOPT || errno == ENOENT) {
-			client_log_error(p, "recvmsg", errno);
-			set_next(p, error_interval());
-			return (-1);
-		} else
-			fatal("recvfrom");
+		client_log_error(p, "recvmsg", errno);
+		set_next(p, error_interval());
+		return (-1);
 	}
 
 	if (somsg.msg_flags & MSG_TRUNC) {
