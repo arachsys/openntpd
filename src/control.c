@@ -1,4 +1,4 @@
-/*	$OpenBSD: control.c,v 1.21 2024/04/23 13:34:51 jsg Exp $ */
+/*	$OpenBSD: control.c,v 1.27 2024/11/21 13:38:14 claudio Exp $ */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -149,7 +149,12 @@ control_accept(int listenfd)
 		return (0);
 	}
 
-	imsg_init(&ctl_conn->ibuf, connfd);
+	if (imsgbuf_init(&ctl_conn->ibuf, connfd) == -1) {
+		log_warn("control_accept");
+		close(connfd);
+		free(ctl_conn);
+		return (0);
+	}
 
 	TAILQ_INSERT_TAIL(&ctl_conns, ctl_conn, entry);
 
@@ -179,7 +184,7 @@ control_close(int fd)
 		return (0);
 	}
 
-	msgbuf_clear(&c->ibuf.w);
+	imsgbuf_clear(&c->ibuf);
 	TAILQ_REMOVE(&ctl_conns, c, entry);
 
 	close(c->ibuf.fd);
@@ -207,7 +212,7 @@ control_dispatch_msg(struct pollfd *pfd, u_int *ctl_cnt)
 	}
 
 	if (pfd->revents & POLLOUT)
-		if (msgbuf_write(&c->ibuf.w) <= 0 && errno != EAGAIN) {
+		if (imsgbuf_write(&c->ibuf) == -1) {
 			*ctl_cnt -= control_close(pfd->fd);
 			return (1);
 		}
@@ -215,7 +220,7 @@ control_dispatch_msg(struct pollfd *pfd, u_int *ctl_cnt)
 	if (!(pfd->revents & POLLIN))
 		return (0);
 
-	if (((n = imsg_read(&c->ibuf)) == -1 && errno != EAGAIN) || n == 0) {
+	if (imsgbuf_read(&c->ibuf) != 1) {
 		*ctl_cnt -= control_close(pfd->fd);
 		return (1);
 	}

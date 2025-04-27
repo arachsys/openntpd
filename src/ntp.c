@@ -1,4 +1,4 @@
-/*	$OpenBSD: ntp.c,v 1.174 2024/02/21 03:31:28 deraadt Exp $ */
+/*	$OpenBSD: ntp.c,v 1.181 2024/11/21 13:38:14 claudio Exp $ */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -159,10 +159,12 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 
 	if ((ibuf_main = malloc(sizeof(struct imsgbuf))) == NULL)
 		fatal(NULL);
-	imsg_init(ibuf_main, PARENT_SOCK_FILENO);
+	if (imsgbuf_init(ibuf_main, PARENT_SOCK_FILENO) == -1)
+		fatal(NULL);
 	if ((ibuf_dns = malloc(sizeof(struct imsgbuf))) == NULL)
 		fatal(NULL);
-	imsg_init(ibuf_dns, pipe_dns[0]);
+	if (imsgbuf_init(ibuf_dns, pipe_dns[0]) == -1)
+		fatal(NULL);
 
 	constraint_cnt = 0;
 	conf->constraint_median = 0;
@@ -332,15 +334,15 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 				clear_cdns = 0;
 		}
 
-		if (ibuf_main->w.queued > 0)
+		if (imsgbuf_queuelen(ibuf_main) > 0)
 			pfd[PFD_PIPE_MAIN].events |= POLLOUT;
-		if (ibuf_dns->w.queued > 0)
+		if (imsgbuf_queuelen(ibuf_dns) > 0)
 			pfd[PFD_PIPE_DNS].events |= POLLOUT;
 
 		TAILQ_FOREACH(cc, &ctl_conns, entry) {
 			pfd[i].fd = cc->ibuf.fd;
 			pfd[i].events = POLLIN;
-			if (cc->ibuf.w.queued > 0)
+			if (imsgbuf_queuelen(&cc->ibuf) > 0)
 				pfd[i].events |= POLLOUT;
 			i++;
 		}
@@ -365,8 +367,7 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 			}
 
 		if (nfds > 0 && (pfd[PFD_PIPE_MAIN].revents & POLLOUT))
-			if (msgbuf_write(&ibuf_main->w) <= 0 &&
-			    errno != EAGAIN) {
+			if (imsgbuf_write(ibuf_main) == -1) {
 				log_warn("pipe write error (to parent)");
 				ntp_quit = 1;
 			}
@@ -380,8 +381,7 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 		}
 
 		if (nfds > 0 && (pfd[PFD_PIPE_DNS].revents & POLLOUT))
-			if (msgbuf_write(&ibuf_dns->w) <= 0 &&
-			    errno != EAGAIN) {
+			if (imsgbuf_write(ibuf_dns) == -1) {
 				log_warn("pipe write error (to dns engine)");
 				ntp_quit = 1;
 			}
@@ -462,11 +462,11 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 		}
 	}
 
-	msgbuf_write(&ibuf_main->w);
-	msgbuf_clear(&ibuf_main->w);
+	imsgbuf_write(ibuf_main);
+	imsgbuf_clear(ibuf_main);
 	free(ibuf_main);
-	msgbuf_write(&ibuf_dns->w);
-	msgbuf_clear(&ibuf_dns->w);
+	imsgbuf_write(ibuf_dns);
+	imsgbuf_clear(ibuf_dns);
 	free(ibuf_dns);
 
 	log_info("ntp engine exiting");
@@ -479,7 +479,7 @@ ntp_dispatch_imsg(void)
 	struct imsg		 imsg;
 	int			 n;
 
-	if (((n = imsg_read(ibuf_main)) == -1 && errno != EAGAIN) || n == 0)
+	if (imsgbuf_read(ibuf_main) != 1)
 		return (-1);
 
 	for (;;) {
@@ -553,7 +553,7 @@ ntp_dispatch_imsg_dns(void)
 	size_t			 addrcount, peercount;
 	int			 n;
 
-	if (((n = imsg_read(ibuf_dns)) == -1 && errno != EAGAIN) || n == 0)
+	if (imsgbuf_read(ibuf_dns) != 1)
 		return (-1);
 
 	for (;;) {
