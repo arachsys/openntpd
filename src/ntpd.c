@@ -1,4 +1,4 @@
-/*	$OpenBSD: ntpd.c,v 1.143 2025/08/20 10:40:21 henning Exp $ */
+/*	$OpenBSD: ntpd.c,v 1.145 2026/04/22 13:54:50 henning Exp $ */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -138,7 +138,7 @@ main(int argc, char *argv[])
 	int			argc0 = argc, logdest;
 	char			**argv0 = argv;
 	char			*pname = NULL;
-	time_t			 settime_deadline;
+	time_t			 settime_deadline = 0;
 	int			 sopt = 0;
 
 	if (strcmp(__progname, "ntpctl") == 0) {
@@ -839,7 +839,7 @@ show_peer_msg(struct imsg *imsg, int calledfromshowall)
 {
 	struct ctl_show_peer	*cpeer;
 	int			 cnt;
-	char			 stratum[3];
+	char			 stratum[4];
 	static int		 firsttime = 1;
 
 	if (imsg->hdr.type == IMSG_CTL_SHOW_PEERS_END) {
