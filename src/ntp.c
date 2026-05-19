@@ -1,4 +1,4 @@
-/*	$OpenBSD: ntp.c,v 1.181 2024/11/21 13:38:14 claudio Exp $ */
+/*	$OpenBSD: ntp.c,v 1.182 2026/04/21 14:31:03 henning Exp $ */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -555,7 +555,7 @@ ntp_dispatch_imsg_dns(void)
 	u_int16_t		 dlen;
 	u_char			*p;
 	struct ntp_addr		*h;
-	size_t			 addrcount, peercount = 0;
+	size_t			 addrcount, peercount;
 	int			 n;
 
 	if (imsgbuf_read(ibuf_dns) != 1)
@@ -582,9 +582,9 @@ ntp_dispatch_imsg_dns(void)
 				break;
 			}
 
+			peercount = 0;
 			if (peer->addr_head.pool) {
 				n = 0;
-				peercount = 0;
 
 				TAILQ_FOREACH_SAFE(npeer, &conf->ntp_peers,
 				    entry, tmp) {
