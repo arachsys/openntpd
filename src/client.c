@@ -248,7 +248,8 @@ handle_auto(uint8_t trusted, double offset)
 	 * It happens the (constraint) resolves initially fail, don't give up
 	 * but see if we get validated replies later.
 	 */
-	if (!trusted && conf->constraint_median == 0)
+	if (!trusted && !TAILQ_EMPTY(&conf->constraints)
+	    && conf->constraint_median == 0)
 		return;
 
 	/* collect some more */
