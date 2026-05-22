@@ -637,6 +637,7 @@ ntp_dispatch_imsg_dns(void)
 					    log_ntp_addr(h), peer->addr_head.name);
 					npeer = new_peer();
 					npeer->weight = peer->weight;
+					npeer->trusted = peer->trusted;
 					npeer->query_addr4 = peer->query_addr4;
 					npeer->query_addr6 = peer->query_addr6;
 					h->next = NULL;
