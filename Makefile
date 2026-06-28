@@ -5,7 +5,7 @@ CTLSOCKET = /run/ntpd.sock
 DRIFTFILE = /var/lib/ntpd.drift
 USERNAME = ntp
 
-CFLAGS = -O2 -Wall
+CFLAGS = -O2 -Wall -Wno-unused-result
 LIBS = -ltls -lm
 
 COMPAT != uname -s | tr A-Z a-z
