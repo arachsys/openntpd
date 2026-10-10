@@ -1,4 +1,4 @@
-/*	$OpenBSD: ntp_dns.c,v 1.37 2026/04/21 12:35:45 henning Exp $ */
+/*	$OpenBSD: ntp_dns.c,v 1.39 2026/08/04 19:05:21 claudio Exp $ */
 
 /*
  * Copyright (c) 2003-2008 Henning Brauer <henning@openbsd.org>
@@ -151,9 +151,8 @@ dns_dispatch_imsg(struct ntpd_conf *nconf)
 		return (-1);
 
 	for (;;) {
-		if ((n = imsg_get(ibuf_dns, &imsg)) == -1)
+		if ((n = imsgbuf_get(ibuf_dns, &imsg)) == -1)
 			return (-1);
-
 		if (n == 0)
 			break;
 
@@ -262,6 +261,6 @@ probe_root(void)
 		log_warnx("DNS root probe failed %d times (%s)", i,
 		    n >= 0 ? "eventually succeeded": "gave up");
 	if (imsg_compose(ibuf_dns, IMSG_PROBE_ROOT, 0, 0, -1, &n,
-	    sizeof(int)) == -1)
+	    sizeof(n)) == -1)
 		fatalx("probe_root");
 }

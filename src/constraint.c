@@ -1,4 +1,4 @@
-/*	$OpenBSD: constraint.c,v 1.60 2024/11/21 13:38:14 claudio Exp $	*/
+/*	$OpenBSD: constraint.c,v 1.65 2026/09/10 15:06:22 deraadt Exp $	*/
 
 /*
  * Copyright (c) 2015 Reyk Floeter <reyk@openbsd.org>
@@ -228,8 +228,8 @@ constraint_query(struct constraint *cstr, int synced)
 }
 
 void
-priv_constraint_msg(u_int32_t id, u_int8_t *data, size_t len, int argc,
-    char **argv)
+priv_constraint_msg(u_int32_t id, u_int8_t *data, size_t len, char *execpath,
+    int argc, char **argv)
 {
 	struct ntp_addr_msg	 am;
 	struct ntp_addr		*h;
@@ -280,7 +280,7 @@ priv_constraint_msg(u_int32_t id, u_int8_t *data, size_t len, int argc,
 	 * the (unprivileged) child.  The parent should not do any parsing,
 	 * certificate loading etc.
 	 */
-	cstr->pid = start_child(CONSTRAINT_PROC_NAME, pipes[1], argc, argv);
+	cstr->pid = start_child(CONSTRAINT_PROC_NAME, pipes[1], execpath, argc, argv);
 
 	if (imsgbuf_flush(&cstr->ibuf) == -1)
 		fatal("imsgbuf_flush");
@@ -290,7 +290,7 @@ static int
 imsgbuf_read_one(struct imsgbuf *imsgbuf, struct imsg *imsg)
 {
 	while (1) {
-		switch (imsg_get(imsgbuf, imsg)) {
+		switch (imsgbuf_get(imsgbuf, imsg)) {
 		case -1:
 			return (-1);
 		case 0:
@@ -628,7 +628,7 @@ priv_constraint_dispatch(struct pollfd *pfd)
 {
 	struct imsg		 imsg;
 	struct constraint	*cstr;
-	ssize_t			 n;
+	int			 n;
 	struct timeval		 tv[2];
 
 	if ((cstr = constraint_byfd(pfd->fd)) == NULL)
@@ -646,7 +646,7 @@ priv_constraint_dispatch(struct pollfd *pfd)
 	}
 
 	for (;;) {
-		if ((n = imsg_get(&cstr->ibuf, &imsg)) == -1) {
+		if ((n = imsgbuf_get(&cstr->ibuf, &imsg)) == -1) {
 			priv_constraint_close(pfd->fd, 1);
 			return (1);
 		}
@@ -1062,7 +1062,9 @@ httpsdate_request(struct httpsdate *httpsdate, struct timeval *when, int synced)
 	 */
 	notbefore = tls_peer_cert_notbefore(httpsdate->tls_ctx);
 	notafter = tls_peer_cert_notafter(httpsdate->tls_ctx);
-	if ((httptime = timegm(&httpsdate->tls_tm)) == -1)
+	httpsdate->tls_tm.tm_wday = -1;		/* sentinel for error */
+	if ((httptime = timegm(&httpsdate->tls_tm)) == -1 &&
+	    httpsdate->tls_tm.tm_wday == -1)
 		goto fail;
 	if (httptime <= notbefore) {
 		if ((tm = gmtime(&notbefore)) == NULL)
@@ -1114,8 +1116,12 @@ httpsdate_query(const char *addr, const char *port, const char *hostname,
 	if (httpsdate_request(httpsdate, &when, synced) == -1)
 		return (NULL);
 
-	/* Return parsed date as local time */
+	httpsdate->tls_tm.tm_wday = -1;		/* sentinel for error */
 	t = timegm(&httpsdate->tls_tm);
+	if (t == -1 && httpsdate->tls_tm.tm_wday == -1) {
+		httpsdate_free(httpsdate);
+		return (NULL);
+	}
 
 	/* Report parsed Date: as "received time" */
 	rectv->tv_sec = t;
