@@ -1,4 +1,4 @@
-/*	$OpenBSD: ntp.c,v 1.182 2026/04/21 14:31:03 henning Exp $ */
+/*	$OpenBSD: ntp.c,v 1.187 2026/09/18 00:45:50 bcook Exp $ */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -27,6 +27,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
@@ -92,12 +93,16 @@ ntp_main(struct ntpd_conf *nconf, struct passwd *pw, int argc, char **argv)
 	time_t			 nextaction, last_sensor_scan = 0, now;
 	time_t			 last_action = 0, interval, last_cdns_reset = 0;
 	void			*newp;
+	char			 execpath[PATH_MAX];
+
+	if (getexecpath(execpath, sizeof execpath) != 0)
+		fatal("getexecpath");
 
 	if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, PF_UNSPEC,
 	    pipe_dns) == -1)
 		fatal("socketpair");
 
-	start_child(NTPDNS_PROC_NAME, pipe_dns[1], argc, argv);
+	start_child(NTPDNS_PROC_NAME, pipe_dns[1], execpath, argc, argv);
 
 	log_init(nconf->debug ? LOG_TO_STDERR : LOG_TO_SYSLOG, nconf->verbose,
 	    LOG_DAEMON);
@@ -482,27 +487,27 @@ int
 ntp_dispatch_imsg(void)
 {
 	struct imsg		 imsg;
-	int			 n;
+	int			 n, synced;
 
 	if (imsgbuf_read(ibuf_main) != 1)
 		return (-1);
 
 	for (;;) {
-		if ((n = imsg_get(ibuf_main, &imsg)) == -1)
+		if ((n = imsgbuf_get(ibuf_main, &imsg)) == -1)
 			return (-1);
-
 		if (n == 0)
 			break;
 
 		switch (imsg.hdr.type) {
 		case IMSG_ADJTIME:
-			memcpy(&n, imsg.data, sizeof(n));
-			if (n == 1 && !conf->status.synced) {
+			if (imsg_get_data(&imsg, &synced, sizeof(synced)) == -1)
+				fatal("IMSG_ADJTIME");
+			if (synced == 1 && !conf->status.synced) {
 				log_info("clock is now synced");
 				conf->status.synced = 1;
 				priv_dns(IMSG_SYNCED, NULL, 0);
 				constraint_reset();
-			} else if (n == 0 && conf->status.synced) {
+			} else if (synced == 0 && conf->status.synced) {
 				log_info("clock is now unsynced");
 				conf->status.synced = 0;
 				priv_dns(IMSG_UNSYNCED, NULL, 0);
@@ -526,11 +531,11 @@ ntp_dispatch_imsg(void)
 
 int
 inpool(struct sockaddr_storage *a,
-    struct sockaddr_storage old[MAX_SERVERS_DNS], size_t n)
+    struct sockaddr_storage old[MAX_SERVERS_DNS], size_t oldcnt)
 {
 	size_t i;
 
-	for (i = 0; i < n; i++) {
+	for (i = 0; i < oldcnt; i++) {
 		if (a->ss_family != old[i].ss_family)
 			continue;
 		if (a->ss_family == AF_INET) {
@@ -555,16 +560,15 @@ ntp_dispatch_imsg_dns(void)
 	u_int16_t		 dlen;
 	u_char			*p;
 	struct ntp_addr		*h;
-	size_t			 addrcount, peercount;
-	int			 n;
+	size_t			 addrcount, peercount, excount;
+	int			 n, probe;
 
 	if (imsgbuf_read(ibuf_dns) != 1)
 		return (-1);
 
 	for (;;) {
-		if ((n = imsg_get(ibuf_dns, &imsg)) == -1)
+		if ((n = imsgbuf_get(ibuf_dns, &imsg)) == -1)
 			return (-1);
-
 		if (n == 0)
 			break;
 
@@ -583,8 +587,8 @@ ntp_dispatch_imsg_dns(void)
 			}
 
 			peercount = 0;
+			excount = 0;
 			if (peer->addr_head.pool) {
-				n = 0;
 
 				TAILQ_FOREACH_SAFE(npeer, &conf->ntp_peers,
 				    entry, tmp) {
@@ -595,7 +599,8 @@ ntp_dispatch_imsg_dns(void)
 					if (npeer->id == peer->id)
 						continue;
 					if (npeer->addr != NULL)
-						existing[n++] = npeer->addr->ss;
+						existing[excount++] =
+						    npeer->addr->ss;
 				}
 			}
 
@@ -628,8 +633,7 @@ ntp_dispatch_imsg_dns(void)
 						free(h);
 						continue;
 					}
-					if (inpool(&h->ss, existing,
-					    n)) {
+					if (inpool(&h->ss, existing, excount)) {
 						free(h);
 						continue;
 					}
@@ -670,11 +674,9 @@ ntp_dispatch_imsg_dns(void)
 			    imsg.data, imsg.hdr.len - IMSG_HEADER_SIZE);
 			break;
 		case IMSG_PROBE_ROOT:
-			dlen = imsg.hdr.len - IMSG_HEADER_SIZE;
-			if (dlen != sizeof(int))
-				fatalx("IMSG_PROBE_ROOT");
-			memcpy(&n, imsg.data, sizeof(int));
-			if (n < 0)
+			if (imsg_get_data(&imsg, &probe, sizeof(probe)) == -1)
+				fatal("IMSG_PROBE_ROOT");
+			if (probe < 0)
 				priv_settime(0, "dns probe failed");
 			break;
 		default:
@@ -711,6 +713,7 @@ peer_addr_head_clear(struct ntp_peer *p)
 static void
 priv_adjfreq(double offset)
 {
+	static double time_origin;
 	double curtime, freq;
 
 	if (!conf->status.synced){
@@ -727,6 +730,10 @@ priv_adjfreq(double offset)
 	offset = conf->freq.overall_offset;
 
 	curtime = gettime_corrected();
+	/* Center time to keep the regression sums numerically stable. */
+	if (conf->freq.samples == 1)
+		time_origin = curtime;
+	curtime -= time_origin;
 	conf->freq.xy += offset * curtime;
 	conf->freq.x += curtime;
 	conf->freq.y += offset;

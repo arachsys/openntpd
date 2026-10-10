@@ -11,5 +11,7 @@ int adjfreq(const int64_t *freq, int64_t *oldfreq);
 int adjtime(const struct timeval *in, struct timeval *out);
 int setsync(int synced);
 
+int getexecpath(char *buf, size_t bufsize);
+
 void initproctitle(char **argv, char **envp);
 void setproctitle(const char *fmt, ...);

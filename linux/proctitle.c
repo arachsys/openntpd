@@ -1,9 +1,7 @@
-#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 static char *title;
 static size_t size;
@@ -32,18 +30,6 @@ initproctitle(char **argv, char **envp)
 			break;
 		size += strlen(envp[i]) + 1;
 		envp[i] = copy;
-	}
-
-	if (argv[0][0] != '/') {
-		copy = calloc(PATH_MAX + 1, 1);
-		if (!copy)
-			return;
-		if (readlink("/proc/self/exe", copy, PATH_MAX) > 0) {
-			free(argv[0]);
-			argv[0] = copy;
-		} else {
-			free(copy);
-		}
 	}
 }
 

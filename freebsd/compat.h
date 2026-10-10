@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <stdint.h>
 
 #define __dead __attribute__((__noreturn__))
@@ -9,4 +10,8 @@
 int adjfreq(const int64_t *freq, int64_t *oldfreq);
 int setsync(int synced);
 
-void initproctitle(char **argv, char **envp);
+int getexecpath(char *buf, size_t bufsize);
+
+static inline void initproctitle(char **argv, char **envp)
+{
+}
