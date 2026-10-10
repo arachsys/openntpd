@@ -206,7 +206,7 @@ main(int argc, char *argv[])
 		usage();
 
 	if (getexecpath(execpath, sizeof execpath) != 0)
-		errx(1, "getexecpath");
+		err(1, "getexecpath");
 
 	if (parse_config(conffile, &lconf))
 		exit(1);
