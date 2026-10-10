@@ -9,7 +9,7 @@ getexecpath(char *buf, size_t bufsize)
 	size_t length = bufsize;
 
 	if (sysctl(mib, 4, buf, &length, NULL, 0) < 0)
-		return errno = ERANGE, -1;
+		return errno = errno == ENOMEM ? ERANGE : ENOENT, -1;
 	if (length < 1 || length > bufsize || buf[length - 1])
 		return errno = ERANGE, -1;
 	return 0;
